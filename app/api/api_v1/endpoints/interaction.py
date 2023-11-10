@@ -37,3 +37,28 @@ async def like_list(authorization=Header(default=None)):
     username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
     result = await action_list(username, likes_collection)
     return result
+
+
+@router.post("/bookmark/{channel_id}/{item_id}")
+async def bookmark(channel_id: int, item_id: int, authorization=Header(default=None)):
+    username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
+    result = await action(
+        username, channel_id, item_id, bookmarks_collection, "bookmarkd"
+    )
+    return result
+
+
+@router.post("/unbookmark/{channel_id}/{item_id}")
+async def unbookmark(channel_id: int, item_id: int, authorization=Header(default=None)):
+    username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
+    result = await unaction(
+        username, channel_id, item_id, bookmarks_collection, "bookmarkd"
+    )
+    return result
+
+
+@router.get("/bookmark_list/")
+async def bookmark_list(authorization=Header(default=None)):
+    username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
+    result = await action_list(username, bookmarks_collection)
+    return result
