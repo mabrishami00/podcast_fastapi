@@ -62,3 +62,50 @@ async def bookmark_list(authorization=Header(default=None)):
     username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
     result = await action_list(username, bookmarks_collection)
     return result
+
+@router.post("/comment/{channel_id}/{item_id}")
+async def comment(channel_id: int, item_id: int, body: dict=Body(default=None),authorization=Header(default=None)):
+    username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
+    if username:
+        async with httpx.AsyncClient() as client:
+            url = f"{settings.DOES_ITEM_EXIST_URL}/{channel_id}/{item_id}/"
+            response = await client.get(url=url)
+            if response.status_code == 200:
+                value = {
+                    "username": username,
+                    "body": body.get("body"),
+                    "channel_id": channel_id,
+                    "item_id": item_id,
+                }
+                await comments_collection.insert_one(value)
+                return JSONResponse(
+                    {"detail": f"Your comment has been registered successfully."}
+                )
+            else:
+                return JSONResponse({"detail": "Item has not been found."})
+
+    else:
+        return JSONResponse({"detail": "You are not authenticated."})
+    
+@router.post("/uncomment/{comment_id}/")
+async def uncomment(comment_id: str, authorization=Header(default=None)):
+    username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
+    if username:
+        await comments_collection.delete_one({"_id": ObjectId(comment_id), "username": username})
+        return JSONResponse(
+            {"detail": f"Your comment has been deleted successfully."}
+            )
+    else:
+        return JSONResponse({"detail": "You are not authenticated."})
+    
+@router.get("/comment_list/{channel_id}/{item_id}")
+async def comment_list(channel_id: int, item_id: int, authorization=Header(default=None)):
+    username, jti = jwt_authentication.authenticate(authorization, settings.SECRET_KEY)
+    if username:
+        comments = comments_collection.find({"channel_id": channel_id, "item_id": item_id}, projection={"_id": False})
+        documents = [commnet for commnet in await comments.to_list(length=100)]
+
+        return JSONResponse(documents)
+    else:
+        return JSONResponse({"detail": "You are not authenticated."})
+    
