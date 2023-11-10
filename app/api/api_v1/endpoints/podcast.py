@@ -30,3 +30,12 @@ async def get_podcasts_of_channel(url: str):
         else:
             return JSONResponse(response_dict, status_code=status.HTTP_404_NOT_FOUND)
 
+@router.get("/search_podcasts")
+async def get_podcasts_of_channel(searched: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{settings.SEARCH_PODCASTS_URL}/?searched={searched}")
+        response_dict = json.loads(response.text)
+        if response.status_code == 200:
+            return JSONResponse(response_dict)
+        else:
+            return JSONResponse(response_dict, status_code=status.HTTP_404_NOT_FOUND)
